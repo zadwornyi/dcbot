@@ -1,0 +1,10 @@
+{
+  "title": "Welcome to {guild}! 👋",
+  "intro": "Glad to have you here! Here are the channels to check out first:",
+  "channel_line": "📌 **{label}** → <#{id}>",
+  "channel_line_no_label": "📌 <#{id}>",
+  "no_channels": "The channel list will be added soon.",
+  "footer": "See you around!",
+  "color": "0xC0C0C0",
+  "show_guild_icon": true
+}
