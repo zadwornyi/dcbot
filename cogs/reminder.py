@@ -22,8 +22,8 @@ COLOR = config.EMBED_COLOR
 # Текст приглашения, уходящего в ЛС. {guild} — название сервера.
 REMINDER_TITLE = "⚔️ Warrior, we need you here!"
 REMINDER_BODY = (
-    "На сервере **{guild}** идёт сбор, а тебя ещё нет под постом.\n"
-    "Загляни и отметься реакцией — каждый воин на счету! 👇"
+    "A muster is underway on **{guild}**, and you're not under the post yet.\n"
+    "Check it out and mark yourself with a reaction — every warrior counts! 👇"
 )
 
 # Пауза между сообщениями, чтобы не упереться в лимиты Discord на рассылку ЛС.
@@ -41,18 +41,18 @@ class ConfirmView(discord.ui.View):
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user.id != self.author_id:
             await interaction.response.send_message(
-                "Подтвердить может только тот, кто вызвал команду.", ephemeral=True
+                "Only the person who ran the command can confirm.", ephemeral=True
             )
             return False
         return True
 
-    @discord.ui.button(label="📣 Разослать", style=discord.ButtonStyle.success)
+    @discord.ui.button(label="📣 Send", style=discord.ButtonStyle.success)
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.value = True
         self.stop()
         await interaction.response.defer()
 
-    @discord.ui.button(label="Отмена", style=discord.ButtonStyle.secondary)
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.secondary)
     async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.value = False
         self.stop()
@@ -76,12 +76,12 @@ class Reminder(commands.Cog):
         # Роль участника должна быть настроена и существовать на сервере.
         if not config.MEMBER_ROLE_ID:
             return await self._error(
-                ctx, "Не задан `MEMBER_ROLE_ID` в .env — некого оповещать."
+                ctx, "`MEMBER_ROLE_ID` is not set in .env — no one to notify."
             )
         role = guild.get_role(config.MEMBER_ROLE_ID)
         if role is None:
             return await self._error(
-                ctx, f"Роль участника (ID `{config.MEMBER_ROLE_ID}`) не найдена на сервере."
+                ctx, f"Member role (ID `{config.MEMBER_ROLE_ID}`) not found on this server."
             )
 
         # 1) Собираем всех, кто поставил ЛЮБУЮ реакцию под сообщением.
@@ -96,8 +96,8 @@ class Reminder(commands.Cog):
         if not targets:
             embed = discord.Embed(
                 description=(
-                    f"Все участники роли {role.mention} уже отметились "
-                    "под постом — звать некого 🎉"
+                    f"Everyone with the {role.mention} role has already reacted "
+                    "to the post — no one left to call 🎉"
                 ),
                 color=COLOR,
             )
@@ -105,34 +105,34 @@ class Reminder(commands.Cog):
 
         # 3) Подтверждение перед массовой рассылкой.
         confirm_embed = discord.Embed(
-            title="📣 Подтверди рассылку",
+            title="📣 Confirm the broadcast",
             description=(
-                f"Под [этим постом]({message.jump_url}) нет реакции у "
-                f"**{len(targets)}** участник(ов) с ролью {role.mention}.\n\n"
-                "Разослать им приглашение в личные сообщения?"
+                f"**{len(targets)}** member(s) with the {role.mention} role haven't "
+                f"reacted to [this post]({message.jump_url}).\n\n"
+                "Send them an invite via direct message?"
             ),
             color=COLOR,
         )
-        confirm_embed.set_footer(text="Отправленные ЛС нельзя отозвать.")
+        confirm_embed.set_footer(text="Sent DMs cannot be recalled.")
         view = ConfirmView(ctx.author.id)
         prompt = await ctx.reply(embed=confirm_embed, view=view, mention_author=False)
         await view.wait()
 
         if view.value is None:
             return await prompt.edit(
-                embed=discord.Embed(description="⏳ Время вышло — рассылка отменена.", color=COLOR),
+                embed=discord.Embed(description="⏳ Timed out — broadcast cancelled.", color=COLOR),
                 view=None,
             )
         if view.value is False:
             return await prompt.edit(
-                embed=discord.Embed(description="❌ Рассылка отменена.", color=COLOR),
+                embed=discord.Embed(description="❌ Broadcast cancelled.", color=COLOR),
                 view=None,
             )
 
         # 4) Рассылаем.
         await prompt.edit(
             embed=discord.Embed(
-                description=f"📨 Рассылаю приглашения {len(targets)} участникам…",
+                description=f"📨 Sending invites to {len(targets)} member(s)…",
                 color=COLOR,
             ),
             view=None,
@@ -144,7 +144,7 @@ class Reminder(commands.Cog):
                 title=REMINDER_TITLE,
                 description=(
                     REMINDER_BODY.format(guild=guild.name)
-                    + f"\n\n🔗 [Перейти к посту]({message.jump_url})"
+                    + f"\n\n🔗 [Go to the post]({message.jump_url})"
                 ),
                 color=COLOR,
             )
@@ -153,7 +153,7 @@ class Reminder(commands.Cog):
 
             link_view = discord.ui.View(timeout=None)
             link_view.add_item(
-                discord.ui.Button(label="Перейти к посту", url=message.jump_url, emoji="⚔️")
+                discord.ui.Button(label="Go to the post", url=message.jump_url, emoji="⚔️")
             )
 
             try:
@@ -170,14 +170,14 @@ class Reminder(commands.Cog):
 
         # 5) Итоговый отчёт.
         result = discord.Embed(
-            title="✅ Рассылка завершена",
+            title="✅ Broadcast complete",
             color=0x57F287,
         )
-        result.add_field(name="Приглашено", value=f"**{sent}**", inline=True)
+        result.add_field(name="Invited", value=f"**{sent}**", inline=True)
         if failed:
-            result.add_field(name="Закрытые ЛС", value=f"**{failed}**", inline=True)
-        result.add_field(name="Отметились ранее", value=f"**{len(reacted)}**", inline=True)
-        result.set_footer(text=f"Команду вызвал {ctx.author.display_name}")
+            result.add_field(name="DMs closed", value=f"**{failed}**", inline=True)
+        result.add_field(name="Already reacted", value=f"**{len(reacted)}**", inline=True)
+        result.set_footer(text=f"Triggered by {ctx.author.display_name}")
         await prompt.edit(embed=result)
 
     # ---- Вспомогательное ----
@@ -191,20 +191,20 @@ class Reminder(commands.Cog):
             error = error.original
 
         if isinstance(error, commands.MissingPermissions):
-            await self._error(ctx, "Команда `!reminder` только для администраторов.")
+            await self._error(ctx, "The `!reminder` command is for administrators only.")
         elif isinstance(error, commands.NoPrivateMessage):
-            await self._error(ctx, "Команда работает только на сервере, не в ЛС.")
+            await self._error(ctx, "This command only works on a server, not in DMs.")
         elif isinstance(error, (commands.MessageNotFound, commands.ChannelNotReadable)):
             await self._error(
                 ctx,
-                "Не нашёл такое сообщение. Укажи ссылку на пост "
-                "(ПКМ по сообщению → «Копировать ссылку») или его ID.",
+                "Couldn't find that message. Provide the post link "
+                "(right-click the message → \"Copy Message Link\") or its ID.",
             )
         elif isinstance(error, (commands.MissingRequiredArgument, commands.BadArgument,
                                 commands.UserInputError)):
-            await self._error(ctx, "Укажи пост. Пример: `!reminder <ссылка-на-сообщение>`")
+            await self._error(ctx, "Specify a post. Example: `!reminder <message-link>`")
         else:
-            await self._error(ctx, "Произошла ошибка при выполнении команды.")
+            await self._error(ctx, "An error occurred while running the command.")
             raise error
 
 
