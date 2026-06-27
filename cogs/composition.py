@@ -529,7 +529,7 @@ class GameComposition(commands.Cog):
 
     @commands.hybrid_command(
         name="vc-check",
-        description="[Admin] Who from a composition is missing from your voice channel")
+        description="[Admin] Who (assigned + checked-in but unassigned) is missing from your voice channel")
     @app_commands.describe(set_name="Composition set name")
     @commands.guild_only()
     @admin_only()
@@ -552,20 +552,32 @@ class GameComposition(commands.Cog):
         for _i, _role, pid in comp["slots"]:
             if pid and pid not in assigned:
                 assigned.append(pid)
-        missing = [pid for pid in assigned if pid not in in_vc]
+        assigned_set = set(assigned)
+        # отметившиеся реакцией, но пока НЕ назначенные ни на одну роль
+        unassigned = [pid for pid in comp["pool"] if pid not in assigned_set]
 
-        if not assigned:
-            return await ctx.reply(f"Composition '{set_name}' has no assigned players yet.",
+        if not assigned and not unassigned:
+            return await ctx.reply(f"Composition '{set_name}' has no players yet.",
                                    ephemeral=True, mention_author=False)
-        if not missing:
+
+        assigned_missing = [pid for pid in assigned if pid not in in_vc]
+        unassigned_missing = [pid for pid in unassigned if pid not in in_vc]
+
+        total = len(assigned) + len(unassigned)
+        if not assigned_missing and not unassigned_missing:
             return await ctx.reply(
-                f"✅ All {len(assigned)} assigned players are in **{vc.name}**.",
+                f"✅ All {total} players (assigned + unassigned) are in **{vc.name}**.",
                 mention_author=False)
 
-        mentions = " ".join(f"<@{pid}>" for pid in missing)
-        await ctx.reply(
-            content=(f"🔇 Not in **{vc.name}** — {len(missing)}/{len(assigned)} missing:\n{mentions}"),
-            mention_author=False)
+        parts = [f"🔇 Missing from **{vc.name}**:"]
+        if assigned_missing:
+            mentions = " ".join(f"<@{pid}>" for pid in assigned_missing)
+            parts.append(f"\n**Assigned ({len(assigned_missing)}/{len(assigned)}):**\n{mentions}")
+        if unassigned_missing:
+            mentions = " ".join(f"<@{pid}>" for pid in unassigned_missing)
+            parts.append(
+                f"\n**Checked in, no role yet ({len(unassigned_missing)}/{len(unassigned)}):**\n{mentions}")
+        await ctx.reply(content="\n".join(parts), mention_author=False)
 
     @commands.hybrid_command(
         name="split",
