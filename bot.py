@@ -33,6 +33,7 @@ class EconomyBot(commands.Bot):
         await self.load_extension("cogs.welcome")
         await self.load_extension("cogs.gameroles")
         await self.load_extension("cogs.composition")
+        await self.load_extension("cogs.reminder")
         await self.load_extension("cogs.help")
 
         # Постоянная панель выбора ролей — переживает перезапуск.

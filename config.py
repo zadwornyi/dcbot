@@ -45,6 +45,7 @@ def _channel_list(name: str):
 TOKEN = os.getenv("DISCORD_TOKEN", "").strip()
 ECONOMY_CHANNEL_ID = _int_or_none("ECONOMY_CHANNEL_ID")
 ADMIN_ROLE_ID = _int_or_none("ADMIN_ROLE_ID")
+MEMBER_ROLE_ID = _int_or_none("MEMBER_ROLE_ID")  # роль "участник" — кого зовёт !reminder
 GUILD_ID = _int_or_none("GUILD_ID")
 
 # Приветствие новичков
