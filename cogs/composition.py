@@ -345,7 +345,8 @@ class _SlotSelect(discord.ui.Select):
 
 class _PlayerSelect(discord.ui.Select):
     def __init__(self, options: list[discord.SelectOption], row: int):
-        super().__init__(placeholder="Assign player (or clear)…", options=options, row=row)
+        super().__init__(placeholder="Assign checked-in player (or clear)…",
+                         options=options, row=row)
 
     async def callback(self, interaction: discord.Interaction):
         v: "CompositionView" = self.view
@@ -356,6 +357,28 @@ class _PlayerSelect(discord.ui.Select):
         else:
             pid = int(val)
             await db.set_composition_slot(v.guild_id, v.set_name, slot, pid)
+        await _refresh(interaction, v.set_name, v.current_tier, v.selected_slot)
+
+
+class _AnyMemberSelect(discord.ui.UserSelect):
+    """Назначить на слот ЛЮБОГО участника сервера — не только отметившихся.
+
+    Если выбранный игрок уже стоит в другом слоте, он оттуда снимается (это «перенос»,
+    чтобы один человек не занимал два слота).
+    """
+    def __init__(self, row: int):
+        super().__init__(placeholder="…or assign any server member to this slot",
+                         min_values=1, max_values=1, row=row)
+
+    async def callback(self, interaction: discord.Interaction):
+        v: "CompositionView" = self.view
+        member = self.values[0]
+        comp = await db.get_composition(v.guild_id, v.set_name)
+        # Снимаем игрока с любых других слотов, чтобы не было дублей.
+        for i, _role, pid in comp["slots"]:
+            if pid == member.id and i != v.selected_slot:
+                await db.set_composition_slot(v.guild_id, v.set_name, i, None)
+        await db.set_composition_slot(v.guild_id, v.set_name, v.selected_slot, member.id)
         await _refresh(interaction, v.set_name, v.current_tier, v.selected_slot)
 
 
@@ -409,8 +432,10 @@ class CompositionView(discord.ui.View):
                 popts.append(discord.SelectOption(label=_member_name(guild, pid)[:100],
                                                   value=str(pid)))
             self.add_item(_PlayerSelect(popts, row=2))
+            # Назначить кого угодно с сервера (для слотов, на которые отметившихся не хватило).
+            self.add_item(_AnyMemberSelect(row=3))
 
-        self.add_item(_PublishButton(row=3))
+        self.add_item(_PublishButton(row=4))
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if member_is_admin(interaction.user):
