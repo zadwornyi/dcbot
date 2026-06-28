@@ -21,7 +21,7 @@
   { "key": "redemption",    "name": "redemption",    "emoji": "⚕️", "description": "Лечение и поддержка союзников" },
   { "key": "hallowfall",    "name": "hallowfall",    "emoji": "⚕️", "description": "Лечение и поддержка союзников" },
   { "key": "exalted",    "name": "exalted",    "emoji": "⚕️", "description": "Лечение и поддержка союзников" },
-  { "key": "blight",    "name": "blight",    "emoji": "⚕️", "description": "Лечение и поддержка союзников" },
+  { "key": "blight",    "name": "nature staff",    "emoji": "⚕️", "description": "Лечение и поддержка союзников" },
   { "key": "battlemount",   "name": "bastion",   "emoji": "🚚", "description": "Перевозка и логистика" },
   { "key": "chariot",   "name": "chariot",   "emoji": "🚚", "description": "Оборона позиций" }
 ]
